@@ -1,0 +1,53 @@
+# Central configuration for the accelerator.
+# There is NO per-table list here anymore — table names, columns and
+# primary keys are all discovered dynamically at runtime straight from
+# SQL Server (src/discovery/table_discovery.py). Connection secrets go
+# in .env (see .env.example) — never here.
+
+source:
+  type: mssql                      # only mssql is supported (SQLite demo removed)
+  host: sql-to-gcp-poc-server2.database.windows.net
+  database: sales_poc
+  driver: "ODBC Driver 18 for SQL Server"
+  schemas: [dbo]                   # which SQL Server schemas to discover tables from
+  # username/password are read from .env as SQL_SERVER_USERNAME / SQL_SERVER_PASSWORD
+
+azure:
+  storage_account: storageaccount8791511009
+  container: migration-staging
+  # sas_token / connection string are read from .env — never stored here
+
+gcp:
+  project_id: sts-accelerator
+  region: asia-south1
+  gcs_bucket: migration-landing-bucket
+  bq_dataset: migrated_data
+
+transfer:
+  mode: public_internet            # public_internet | private_network (Cross-Cloud Interconnect)
+  service_directory_selflink: null # only used if mode: private_network
+
+extraction:
+  # Every table is paged by its primary key (keyset pagination), NOT by
+  # partitioning on a business column. Each page is written as its own
+  # Parquet file (<table>_part0000.parquet, _part0001.parquet, ...) and
+  # loaded/merged independently, so a failure partway through a table
+  # only has to redo the pages after the last committed checkpoint.
+  batch_size: 5000
+metadata:
+  # Table names for the operational tables this pipeline maintains in
+  # BigQuery itself (created automatically if they don't exist — see
+  # src/bigquery/bq_control_tables.py):
+  log_table: migration_pipeline_logs        # raw per-stage event log, as a queryable table
+  checkpoint_table: migration_checkpoint    # last committed PK per table, used to resume failed/partial runs
+  audit_table: migration_audit              # one row per table per run — final outcome / row counts
+  report_table: migration_report            # one row per table — latest status + live row count (see src/reporting)
+
+overrides_file: config/tables_override.yaml
+
+# OPTIONAL. Where src/planner/table_planner.py writes its auto-generated,
+# read-only snapshot of the current dynamic table plan (name, primary key,
+# load_mode) every time it runs. Purely informational —
+# never read back in — so it's always safe to delete or leave unset
+# (defaults to config/tables.yaml).
+tables_snapshot_file: config/tables.yaml

@@ -1,0 +1,22 @@
+pandas
+pyarrow
+pyyaml
+openpyxl
+python-dotenv
+
+# Google Cloud
+google-cloud-bigquery
+google-cloud-storage
+google-cloud-storage-transfer
+
+# Azure
+azure-storage-blob
+
+# Airflow providers (only needed inside Composer, not for local/Cloud Shell testing)
+apache-airflow-providers-google
+apache-airflow-providers-microsoft-azure
+
+# Real SQL Server connectivity (source.type: mssql is the only supported
+# source now — the SQLite demo path has been removed entirely)
+sqlalchemy
+pyodbc
